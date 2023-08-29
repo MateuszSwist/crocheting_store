@@ -27,7 +27,7 @@ services:
       - .env
     command: >
       bash -c "
-        sleep 17 && python manage.py migrate"
+        sleep 25 && python manage.py migrate"
     depends_on:
       - db
   #  ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ services:
     image: app:django
     command: >
       bash -c "
-        sleep 22 && python manage.py createsuperuser --no-input"
+        sleep 30 && python manage.py createsuperuser --no-input"
     environment:
       - DJANGO_SUPERUSER_USERNAME=admin
       - DJANGO_SUPERUSER_PASSWORD=admin
@@ -56,6 +56,8 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=mypass
+    depends_on:
+      - db
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -74,7 +76,7 @@ services:
       - .env
     command: >
       bash -c "
-        sleep 12 &&
+        sleep 20 &&
         python manage.py runserver 0.0.0.0:8000"
   # ----------------------------------------------------------------------------
   celery:
