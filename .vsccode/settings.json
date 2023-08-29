@@ -1,0 +1,9 @@
+{
+    "editor.format.OnSave": true,
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": [
+
+    ]
+
+
+}
