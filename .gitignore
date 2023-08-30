@@ -145,5 +145,5 @@ media
 .idea/mysite.iml
 
 # Backup files #
-# *.bak
-# .vscode/settings.json
+*.bak
+.vscode/settings.json
