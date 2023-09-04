@@ -24,7 +24,7 @@ services:
       - POSTGRES_HOST=db
       - POSTGRES_DATABASE_PORT=5432
     env_file:
-      - .env
+      - ../.env
     command: >
       bash -c "
         sleep 25 && python manage.py migrate"
@@ -45,7 +45,7 @@ services:
       - POSTGRES_DB=postgres
       - POSTGRES_HOST=db
     env_file:
-      - .env
+      - ../.env
     depends_on:
       - db
       - migrations
@@ -73,7 +73,7 @@ services:
     image: app:django
     container_name: django_container
     env_file:
-      - .env
+      - ../.env
     command: >
       bash -c "
         sleep 20 &&

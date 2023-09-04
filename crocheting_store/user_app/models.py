@@ -1,3 +1,20 @@
+from django.contrib.auth.models import(
+    AbstractBaseUser,
+    PermissionsMixin
+    )
+from django.contrib.auth.hashers import make_password
 from django.db import models
 
-# Create your models here.
+class StoreUser(AbstractBaseUser):
+
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=30)
+    username = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=False)
+    is_customer = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    USERNAME_FIELD = 'email'
+
+    def __str__(self):
+        return self.username
