@@ -1,10 +1,12 @@
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.http import request
+from django.core.mail import send_mail
 
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
-from . models import StoreUser
+from . models import StoreUser, EmailConfirmationToken
+from . utils import send_confirmation_email
 
 
 
@@ -32,7 +34,13 @@ class StoreUserSerializer(serializers.ModelSerializer):
 
     def create(self, validate_data):
         user = StoreUser.objects.create_user(email=validate_data['email'], password=validate_data['password'])
+        token = EmailConfirmationToken.objects.create(user=user)
 
+        send_confirmation_email(
+            email = user.email, 
+            token_id=token.pk, 
+            user_id=user.pk
+            ) 
         return user        
 
 
