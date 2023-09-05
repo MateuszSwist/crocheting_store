@@ -11,12 +11,14 @@ from . utils import send_confirmation_email
 
 
 class StoreUserSerializer(serializers.ModelSerializer):
+    password_confirmation = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
     class Meta:
         model = StoreUser
         fields = [
             'email',
             'password',
+            'password_confirmation'
         ]
         extra_kwargs = {
             'password':{
@@ -24,7 +26,12 @@ class StoreUserSerializer(serializers.ModelSerializer):
                 'style': {'input_type': 'password'}
             }
         }
-        
+
+    def validate_same_password(self, data):
+        if data['password'] != data['password_confirmation']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        return data
+    
     def validate_password(self, password):
         try:
             validate_password(password)

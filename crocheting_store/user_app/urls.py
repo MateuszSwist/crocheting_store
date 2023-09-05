@@ -3,6 +3,7 @@ from .views import(
     ListUsersView,
     UserInformationView,
     confirm_email_view,
+    LogoutView,
 )
 
 from django.urls import path
@@ -14,6 +15,7 @@ urlpatterns =[
     path('create_user/', CreateUserView.as_view(), name='create_user'),
     path('login/', obtain_auth_token, name='login'),
     path('users_list/', ListUsersView.as_view(), name='users_list'),
+    path('logout/', LogoutView.as_view(), name='logout'),
     
     path('user_information/me',
         UserInformationView.as_view(), name='user_information_me'),

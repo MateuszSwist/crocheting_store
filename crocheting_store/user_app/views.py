@@ -20,9 +20,22 @@ class CreateUserView(CreateAPIView):
     permission_classes = [AllowAny, ]
     serializer_class = StoreUserSerializer
 
+
+class LogoutView(APIView):
+
+    def post(self, request):
+        try:
+            request.user.auth_token.delete()
+        except (AttributeError):
+            pass
+
+        return Response(status=status.HTTP_200_OK)
+    
 class ListUsersView(ListAPIView):
+
     queryset = StoreUser.objects.all()
     serializer_class = StoreUserSerializer
+
 class UserInformationView(APIView):
 
     permission_classes = [IsAuthenticated]
