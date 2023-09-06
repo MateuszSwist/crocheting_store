@@ -1,39 +1,42 @@
+from email.message import EmailMessage
 from django.urls import reverse
 from django.test import TestCase, RequestFactory
 from django.contrib.auth import get_user_model
+from django.core import mail
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, force_authenticate
 from rest_framework.authtoken.models import Token
 from .models import(StoreUser, 
                     EmailConfirmationToken)
+from .utils import send_confirmation_email
 from .views import confirm_email_view
 
 
 class UserCreateTestCase(APITestCase):
 
-    def test_singup_api_view_is_working(self):
-        url = reverse('create_user')
-        data = {
+    def setUp(self):
+        self.url = reverse('create_user')
+        self.data = {
             'email': 'test@mail.com',
-            'username': 'test_user',
             'password': 'testpassword',
             'password_confirmation': 'testpassword'
         }
-        response = self.client.post(url, data, format='json')
+
+    def test_singup_api_view_is_working(self):
+        response = self.client.post(self.url, self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        created_user = StoreUser.objects.filter(email=data['email']).first()
+        created_user = StoreUser.objects.filter(email=self.data['email']).first()
         self.assertIsNotNone(created_user)
         self.assertTrue(created_user.check_password('testpassword'))
 
+    def test_differece_password_case(self):
+        self.data['password_confirmation'] = 'testpassword1'
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                
     def test_no_double_email(self):
-        url = reverse('create_user')
-        data = {
-            'email': 'test@mail.com',
-            'username': 'test_user',
-            'password': 'test_password'
-        }
-        response = self.client.post(url, data, format='json')
-        response = self.client.post(url, data, format='json')
+        response = self.client.post(self.url, self.data, format='json')
+        response = self.client.post(self.url, self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 class UserInformationTestCase(APITestCase):
@@ -57,6 +60,7 @@ class UserInformationTestCase(APITestCase):
 
 
 class LogoutViewTestCase(APITestCase):
+
     def test_logout_success(self):        
         self.user = StoreUser.objects.create_user(
             email='test@example.com',
@@ -69,32 +73,29 @@ class LogoutViewTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(Token.objects.filter(user=self.user).exists())
 
-# class EmailConfirmationTestCase(TestCase):
-#     def setUp(self):
-#         self.factory = RequestFactory()
-#         self.user = get_user_model().objects.create_user(
-#             email='test@example.com',
-#             password='testpassword',
-#             is_email_confirmed=False
-#         )
-#         self.token = EmailConfirmationToken.objects.create(user=self.user)
 
-#     def test_email_confirmation_successful(self):
-#         url = reverse('confirm_email')
-#         request = self.factory.get(url, {'token_id': self.token.pk})
-#         response = confirm_email_view(request)
+class EmailConfirmationTestCase(TestCase):
 
-#         self.assertEqual(response.status_code, 200)
-#         self.assertTrue(response.context['is_confirmed'])
-#         self.user.refresh_from_db()
-#         self.assertTrue(self.user.is_email_confirmed)
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = StoreUser.objects.create_user(
+            email='test@example.com',
+            password='testpassword',
+        )
+        self.token = EmailConfirmationToken.objects.create(user=self.user)
+        self.expected_link = f'confirm_email?token_id={self.token.pk}&user_id={self.user.pk}'
 
-#     def test_email_confirmation_token_does_not_exist(self):
-#         url = reverse('confirm_email')
-#         request = self.factory.get(url, {'token_id': 'nonexistent_token_id'})
-#         response = confirm_email_view(request)
+    def test_sending_confrimation_link(self):
+        email = 'test@example.com'
+        send_confirmation_email(email, self.token.id, self.user.id)
+        self.assertEqual(len(mail.outbox), 1)
+        sent_mail = mail.outbox[0]    
+        self.assertIn(self.expected_link, sent_mail.body)
 
-#         self.assertEqual(response.status_code, 200)
-#         self.assertFalse(response.context['is_confirmed'])
-#         self.user.refresh_from_db()
-#         self.assertFalse(self.user.is_email_confirmed)
+    def test_starting_cofnrimation_view(self):
+        url = reverse('confirm_email') + f'?token_id={self.token.id}&user_id={self.user.id}'
+        request = self.factory.get(url)
+        force_authenticate(request, user=self.user)
+        response = confirm_email_view(request)
+        self.assertEqual(response.status_code, 200)
+

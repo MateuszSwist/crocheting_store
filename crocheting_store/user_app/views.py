@@ -53,7 +53,6 @@ def confirm_email_view(request):
         token = EmailConfirmationToken.objects.get(pk=token_id)
         user = token.user
         user.is_email_confirmed = True
-        user.save()
         data = {'is_confirmed': True}
         return render(
             request,

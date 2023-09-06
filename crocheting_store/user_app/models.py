@@ -33,7 +33,6 @@ class StoreUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_email_confirmed = models.BooleanField(default=False)
-    username = models.CharField(max_length=100, null=True)
 
     USERNAME_FIELD = 'email'
     objects = StoreUserManager()

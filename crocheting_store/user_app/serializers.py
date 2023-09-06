@@ -27,7 +27,7 @@ class StoreUserSerializer(serializers.ModelSerializer):
             }
         }
 
-    def validate_same_password(self, data):
+    def validate(self, data):
         if data['password'] != data['password_confirmation']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         return data
