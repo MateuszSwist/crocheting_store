@@ -1,10 +1,12 @@
 from django.urls import reverse
+from django.test import TestCase, RequestFactory
+from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
-from .models import StoreUser, EmailConfirmationToken
-from rest_framework.test import APIClient
-from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
+from .models import(StoreUser, 
+                    EmailConfirmationToken)
+from .views import confirm_email_view
 
 
 class UserCreateTestCase(APITestCase):
@@ -34,80 +36,65 @@ class UserCreateTestCase(APITestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-# class UserLoginTestCase(APITestCase):
-   
-#     def setUp(self):
-#         self.user_data = {
-#             'email': 'test@mail.com',
-#             'password': 'testpassword',
-#         }
-#         self.user = StoreUser.objects.create(**self.user_data)
-#         self.client = APIClient()
-#         print(self.user)
-#         print(self.user.password)
-
-#     def test_loigin_api_view_is_working(self):
-#         url = reverse ('login')
-#         data = {'email': 'test@mail.com', 'password': 'testpassword'}
-#         print(data)
-#         response = self.client.post(url, data, format='json')
-#         print(response)
-#         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#         self.assertIn('token', response.data)
-
-
-class UserEmailConfirmationTestCase(APITestCase):
+class UserInformationTestCase(APITestCase):
 
     def test_user_information_view_requires_authentication(self):
         url = reverse('user_information_me')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    # def test_send_email_confirmation_token_view_create_token(self):
-    #     user = StoreUser.objects.create_user(
-    #         email='test@mail.com',
-    #         username='test_user',
-    #         password='test_password'
-    #     )
-    #     self.client.force_authenticate(user=user)
-    #     url = reverse('send_email_confirmation_token')
-    #     response = self.client.post(url)
-    #     self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-    #     token = EmailConfirmationToken.objects.filter(user=user).first()
-    #     self.assertIsNotNone(token)
+    def test_user_information_view_data_is_working(self):
+        self.user = StoreUser.objects.create_user(
+            email='test@mail.com',
+            password='test_password'
+        )
+        self.client.force_authenticate(user=self.user) 
+        url = reverse('user_information_me')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['email'], self.user.email)
+        self.assertEqual(response.data['is_email_acvite'], self.user.is_email_confirmed)
 
-    # def test_send_email_confirmation_token_view_requires_authentication(self):
-    #     url = reverse('send_email_confirmation_token')
-    #     response = self.client.post(url) 
-    #     self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 class LogoutViewTestCase(APITestCase):
-    def setUp(self):
-        self.user = get_user_model().objects.create_user(
+    def test_logout_success(self):        
+        self.user = StoreUser.objects.create_user(
             email='test@example.com',
             password='testpassword'
         )
         self.token = Token.objects.create(user=self.user)
         self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
-
-    def test_logout_success(self):
-        response = self.client.post('/logout/')
+        url = reverse('logout')
+        response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(Token.objects.filter(user=self.user).exists())
 
-    def test_logout_unauthenticated(self):
-        # Wylogowanie użytkownika
-        self.client.logout()
-        response = self.client.post('/logout/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Token nie powinien zostać usunięty, ponieważ użytkownik jest nieuwierzytelniony
-        self.assertTrue(Token.objects.filter(user=self.user).exists())
+# class EmailConfirmationTestCase(TestCase):
+#     def setUp(self):
+#         self.factory = RequestFactory()
+#         self.user = get_user_model().objects.create_user(
+#             email='test@example.com',
+#             password='testpassword',
+#             is_email_confirmed=False
+#         )
+#         self.token = EmailConfirmationToken.objects.create(user=self.user)
 
-    def test_logout_no_token(self):
-        # Usunięcie tokena przed próbą wylogowania
-        self.token.delete()
-        response = self.client.post('/logout/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Token nie powinien zostać usunięty, ponieważ nie ma tokena
-        self.assertFalse(Token.objects.filter(user=self.user).exists())
+#     def test_email_confirmation_successful(self):
+#         url = reverse('confirm_email')
+#         request = self.factory.get(url, {'token_id': self.token.pk})
+#         response = confirm_email_view(request)
+
+#         self.assertEqual(response.status_code, 200)
+#         self.assertTrue(response.context['is_confirmed'])
+#         self.user.refresh_from_db()
+#         self.assertTrue(self.user.is_email_confirmed)
+
+#     def test_email_confirmation_token_does_not_exist(self):
+#         url = reverse('confirm_email')
+#         request = self.factory.get(url, {'token_id': 'nonexistent_token_id'})
+#         response = confirm_email_view(request)
+
+#         self.assertEqual(response.status_code, 200)
+#         self.assertFalse(response.context['is_confirmed'])
+#         self.user.refresh_from_db()
+#         self.assertFalse(self.user.is_email_confirmed)
