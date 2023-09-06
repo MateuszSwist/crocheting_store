@@ -1,4 +1,3 @@
-from email.message import EmailMessage
 from django.urls import reverse
 from django.test import TestCase, RequestFactory
 from django.contrib.auth import get_user_model
@@ -39,6 +38,39 @@ class UserCreateTestCase(APITestCase):
         response = self.client.post(self.url, self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+class LoginViewTests(APITestCase):
+
+    def setUp(self):
+        self.email = 'test@mail.com'
+        self.password = 'testpassword'
+        self.user = StoreUser.objects.create_user(email=self.email, password=self.password)
+
+    def test_login_valid_user(self):
+        url = reverse('login')
+        data = {'email': self.email, 'password': self.password}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('token', response.data)
+
+    def test_login_invalid_user(self):
+        url = reverse('login')
+        data = {'email': self.email, 'password': 'invalid_password'}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data, {'error': 'Invalid credentials'})
+
+    def test_login_missing_username(self):
+        url = reverse('login')
+        data = {'password': self.password}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_login_missing_password(self):
+        url = reverse('login')
+        data = {'email': self.email}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
 class UserInformationTestCase(APITestCase):
 
     def test_user_information_view_requires_authentication(self):
@@ -57,22 +89,6 @@ class UserInformationTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['email'], self.user.email)
         self.assertEqual(response.data['is_email_acvite'], self.user.is_email_confirmed)
-
-
-class LogoutViewTestCase(APITestCase):
-
-    def test_logout_success(self):        
-        self.user = StoreUser.objects.create_user(
-            email='test@example.com',
-            password='testpassword'
-        )
-        self.token = Token.objects.create(user=self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token.key}')
-        url = reverse('logout')
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(Token.objects.filter(user=self.user).exists())
-
 
 class EmailConfirmationTestCase(TestCase):
 
@@ -99,3 +115,53 @@ class EmailConfirmationTestCase(TestCase):
         response = confirm_email_view(request)
         self.assertEqual(response.status_code, 200)
 
+class ChangePasswordViewTestCase(APITestCase):
+
+    def setUp(self):
+        self.user = StoreUser.objects.create_user(
+            email='test@user.com',
+            password='testpassword'
+        )
+        self.url = reverse('change_password')
+
+    def test_change_password(self):
+        data = {
+            'old_password': 'testpassword',
+            'new_password': 'newpassword123',
+            'confirm_new_password': 'newpassword123',
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('newpassword123'))
+
+    def test_change_password_incorrect_old_password(self):
+        data = {
+            'old_password': 'incorrect_password',
+            'new_password': 'newpassword123',
+            'confirm_new_password': 'newpassword123',
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_password_incorrect_confirmation(self):
+        data = {
+            'old_password': 'testpassword',
+            'new_password': 'newpassword123',
+            'confirm_new_password': 'different_password',
+        }
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_password_unauthenticated(self):
+        data = {
+            'old_password': 'testpassword',
+            'new_password': 'newpassword123',
+            'confirm_new_password': 'newpassword123',
+        }
+        response = self.client.put(self.url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

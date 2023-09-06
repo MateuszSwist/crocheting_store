@@ -1,17 +1,17 @@
-from rest_framework.generics import CreateAPIView, ListAPIView
+from rest_framework.generics import(CreateAPIView, 
+                                    ListAPIView, 
+                                    UpdateAPIView)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
-
-
 from rest_framework.authtoken.models import Token
 
 from django.http import request
 from django.shortcuts import render
+from django.contrib.auth import authenticate, logout
 
-
-from .serializers import StoreUserSerializer
+from .serializers import StoreUserSerializer, ChangePasswordSerializer, LoginSerializer
 from .models import EmailConfirmationToken, StoreUser
 from .utils import send_confirmation_email
 
@@ -20,16 +20,28 @@ class CreateUserView(CreateAPIView):
     permission_classes = [AllowAny, ]
     serializer_class = StoreUserSerializer
 
+class LoginView(APIView):
 
-class LogoutView(APIView):
+    serializer_class = LoginSerializer 
+    permission_classes = [AllowAny]
 
     def post(self, request):
-        try:
-            request.user.auth_token.delete()
-        except (AttributeError):
-            pass
+        email = request.data.get('email')
+        password = request.data.get('password')
+        user = authenticate(request, email=email, password=password)
+        if user is not None:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key}, status=status.HTTP_200_OK)
+        
+        else:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        return Response(status=status.HTTP_200_OK)
+
+class LogoutView(APIView):
+    def post(self, request):
+        logout(request)
+        return Response({'message': 'User logged out successfully'})
+
     
 class ListUsersView(ListAPIView):
 
@@ -67,3 +79,33 @@ def confirm_email_view(request):
             template_name='confirmation_mail_view.html',
               context=data
               )
+    
+class ChangePasswordView(UpdateAPIView):
+
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [IsAuthenticated, ]
+
+    def update(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = request.user
+            old_password = serializer.validated_data.get('old_password')
+            new_password = serializer.validated_data.get('new_password')
+            new_password_confirmation = serializer.validated_data.get('confirm_new_password')
+
+            if not user.check_password(old_password):
+                return Response("wrong old password", status=status.HTTP_400_BAD_REQUEST)
+            
+            if new_password != new_password_confirmation:
+                return Response("incorrect password confirmation", status=status.HTTP_400_BAD_REQUEST)
+            
+            else:
+                user.set_password(new_password)
+                user.save()
+                return Response("password changed", status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+

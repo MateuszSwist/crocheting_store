@@ -9,8 +9,8 @@ from . models import StoreUser, EmailConfirmationToken
 from . utils import send_confirmation_email
 
 
-
 class StoreUserSerializer(serializers.ModelSerializer):
+
     password_confirmation = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
 
     class Meta:
@@ -50,4 +50,23 @@ class StoreUserSerializer(serializers.ModelSerializer):
             ) 
         return user        
 
+class LoginSerializer(serializers.Serializer):
 
+    email = serializers.CharField()
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+
+class ChangePasswordSerializer(serializers.Serializer):
+
+    model = StoreUser
+
+    old_password = serializers.CharField()
+
+    new_password = serializers.CharField(
+        write_only=True, required=True, style={'input_type': 'password'})
+    
+    confirm_new_password = serializers.CharField(
+        write_only=True, required=True, style={'input_type': 'password'})
+
+    def validate_new_password(self, new_password):
+        validate_password(new_password)
+        return new_password

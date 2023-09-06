@@ -4,19 +4,20 @@ from .views import(
     UserInformationView,
     confirm_email_view,
     LogoutView,
+    ChangePasswordView,
+    LoginView
 )
 
 from django.urls import path
-from rest_framework.authtoken.views import obtain_auth_token
-
 
 
 urlpatterns =[
     path('create_user/', CreateUserView.as_view(), name='create_user'),
-    path('login/', obtain_auth_token, name='login'),
+    path('login/', LoginView.as_view(), name='login'),
     path('users_list/', ListUsersView.as_view(), name='users_list'),
     path('logout/', LogoutView.as_view(), name='logout'),
-    
+    path('change_password/', ChangePasswordView.as_view(), name='change_password'),
+
     path('user_information/me',
         UserInformationView.as_view(), name='user_information_me'),
 
