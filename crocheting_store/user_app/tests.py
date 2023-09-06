@@ -165,3 +165,22 @@ class ChangePasswordViewTestCase(APITestCase):
         }
         response = self.client.put(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class DeleteAccountViewTestCase(APITestCase):
+    def setUp(self):
+        self.user = StoreUser.objects.create_user(
+            email='test@user.com',
+            password='testpassword'
+        )
+        self.url = reverse('delete')
+
+    def test_delete_account(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(StoreUser.objects.filter(email='test@user.com').exists())
+
+    def test_delete_account_unauthenticated(self):
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertTrue(StoreUser.objects.filter(email='test@user.com').exists())

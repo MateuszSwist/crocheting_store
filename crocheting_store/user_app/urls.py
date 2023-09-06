@@ -5,7 +5,8 @@ from .views import(
     confirm_email_view,
     LogoutView,
     ChangePasswordView,
-    LoginView
+    LoginView,
+    DeleteAccountView
 )
 
 from django.urls import path
@@ -17,6 +18,7 @@ urlpatterns =[
     path('users_list/', ListUsersView.as_view(), name='users_list'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('change_password/', ChangePasswordView.as_view(), name='change_password'),
+    path('delete_user/', DeleteAccountView.as_view(), name='delete'),
 
     path('user_information/me',
         UserInformationView.as_view(), name='user_information_me'),
