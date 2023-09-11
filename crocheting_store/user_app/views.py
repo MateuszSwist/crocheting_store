@@ -60,6 +60,7 @@ class UserInformationView(APIView):
         payload = {"email": email, "is_email_acvite": is_email_acvite}
         return Response(data=payload, status=status.HTTP_200_OK)
 
+
 def confirm_email_view(request):
     token_id = request.GET.get("token_id", None)
     try:
@@ -75,10 +76,10 @@ def confirm_email_view(request):
         data = {"is_confirmed": False}
         return render(
             request, template_name="confirmation_mail_view.html", context=data
-        )    
+        )
+
 
 class ChangePasswordView(UpdateAPIView):
-
     def update(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
 
@@ -108,6 +109,7 @@ class ChangePasswordView(UpdateAPIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class DeleteAccountView(APIView):
     permission_classes = [
         IsAuthenticated,
@@ -118,7 +120,3 @@ class DeleteAccountView(APIView):
         user.delete()
 
         return Response("User deleted", status=status.HTTP_200_OK)
-
-
-
-

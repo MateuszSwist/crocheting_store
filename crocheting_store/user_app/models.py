@@ -7,6 +7,7 @@ from django.contrib.auth.models import (
 from django.contrib.auth.hashers import make_password
 from django.db import models
 
+
 class StoreUserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
         if not email:
@@ -25,6 +26,7 @@ class StoreUserManager(BaseUserManager):
         user.save()
         return user
 
+
 class StoreUser(AbstractBaseUser, PermissionsMixin):
     created = models.DateTimeField(auto_now_add=True)
     email = models.EmailField(unique=True)
@@ -37,6 +39,7 @@ class StoreUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
 
 class EmailConfirmationToken(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)

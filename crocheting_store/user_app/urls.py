@@ -1,9 +1,9 @@
 from django.urls import path
 from django.contrib.auth.views import (
-    PasswordResetView, 
-    PasswordResetDoneView, 
+    PasswordResetView,
+    PasswordResetDoneView,
     PasswordResetConfirmView,
-    PasswordResetCompleteView
+    PasswordResetCompleteView,
 )
 from .views import (
     CreateUserView,
@@ -17,7 +17,6 @@ from .views import (
 )
 
 
-
 urlpatterns = [
     path("create_user/", CreateUserView.as_view(), name="create_user"),
     path("login/", LoginView.as_view(), name="login"),
@@ -29,13 +28,27 @@ urlpatterns = [
         "user_information/me", UserInformationView.as_view(), name="user_information_me"
     ),
     path("confirm_email", confirm_email_view, name="confirm_email"),
-
-
-    path('password-reset/', PasswordResetView.as_view(template_name='password_reset.html', html_email_template_name = 'password_reset_email.html'),name='password-reset'),
-
-    path('password-reset/done/', PasswordResetDoneView.as_view(template_name='password_reset_done.html'),name='password_reset_done'),
-
-    path('password-reset-confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(template_name='password_reset_confirm.html'),name='password_reset_confirm'),
-
-    path('password-reset-complete/',PasswordResetCompleteView.as_view(template_name='password_reset_complete.html'),name='password_reset_complete'),
+    path(
+        "password-reset/",
+        PasswordResetView.as_view(
+            template_name="password_reset.html",
+            html_email_template_name="password_reset_email.html",
+        ),
+        name="password-reset",
+    ),
+    path(
+        "password-reset/done/",
+        PasswordResetDoneView.as_view(template_name="password_reset_done.html"),
+        name="password_reset_done",
+    ),
+    path(
+        "password-reset-confirm/<uidb64>/<token>/",
+        PasswordResetConfirmView.as_view(template_name="password_reset_confirm.html"),
+        name="password_reset_confirm",
+    ),
+    path(
+        "password-reset-complete/",
+        PasswordResetCompleteView.as_view(template_name="password_reset_complete.html"),
+        name="password_reset_complete",
+    ),
 ]
